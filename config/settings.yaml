@@ -1,1 +1,17 @@
- 
+ llm:
+   local_model: llama3:8b-instruct-q3_K_M
+   mode: local_model
+   context_window_tokens: 4096
+
+ vector_db:
+   code: data/vector_code_db
+   history: data/vector_history_db
+
+ memory:
+   static_path: data/static_memory.json
+   dynamic_path: data/dynamic_memory.json
+
+ finetune:
+   trigger_threshold: 50
+   output_dir: data/finetune_checkpoints
+           
