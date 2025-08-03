@@ -16,4 +16,4 @@ whisper
 streamlit
 pyqt5
 pyinstaller
- 
+requests 

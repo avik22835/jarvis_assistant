@@ -1,7 +1,10 @@
  llm:
    local_model: llama3:8b-instruct-q3_K_M
-   mode: local_model
+   mode: groq
+   ollama_url: http://localhost:11434
+   groq_api_key: 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
    context_window_tokens: 4096
+   groq_model: llama3-70b-8192
 
  vector_db:
    code: data/vector_code_db

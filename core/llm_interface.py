@@ -1,14 +1,21 @@
+from cmath import e
 import requests
-import openai
 import yaml
+import json
+import os
+from groq import Groq # type: ignore
+
 
 with open("config/settings.yaml", "r") as f:
     settings = yaml.safe_load(f)
 
 MODE = settings["llm"]["mode"]
 LOCAL_MODEL = settings["llm"]["local_model"]
-OLLAMA_URL = settings.get("llm", {}).get("ollama_url", "http://localhost:11434")
+OLLAMA_URL = settings["llm"].get("ollama_url","http://localhost:11434")
+GROQ_API_KEY = settings["llm"].get("groq_api_key")
+GROQ_MODEL = settings["llm"].get("groq_model", "llama3-70b-8192")
 
+client = Groq(api_key=GROQ_API_KEY)
 
 def call_ollama(prompt: str) -> str:
     try:
@@ -41,26 +48,49 @@ def call_ollama(prompt: str) -> str:
 
         print()
         return full_output
-    
+   
     except Exception as e:
         return f"Error: Ollama failed: {e}"
-    
-def call_openai(prompt: str) -> str:
-    try:
-        openai.api_key = "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"
-        res = openai.ChatCompletion.create(
-            model="gpt-4",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.5
-        )    
-        return res.choices[0].message.content
-    except Exception as e:
-        return f"Error:OpenAI failed: {e}"
-    
+   
+def call_groq(prompt: str, stream: bool = True) -> str:
+    response_text = ""
+
+    if stream:
+        try:
+            stream_response = client.chat.completions.create(
+                model=GROQ_MODEL,
+                messages=[{"role": "user", "content": prompt}],
+                stream=True,
+            )
+            for chunk in stream_response:
+                if chunk.choices:
+                    delta = chunk.choices[0].delta
+                    if delta and delta.content:
+                        print(delta.content, end="", flush=True)
+                        response_text += delta.content
+            return response_text
+        except Exception as e:
+            print(f"\n[Streaming error] {e}")
+            return ""
+
+    else:
+        try:
+            res = client.chat.completions.create(
+                model=GROQ_MODEL,
+                messages=[{"role": "user", "content": prompt}],
+                stream=False,
+            )
+            return res.choices[0].message.content
+        except Exception as e:
+            print(f"[Non-streaming error] {e}")
+            return ""
+   
 def query_llm(prompt: str) -> str:
     if MODE == "local_model":
         return call_ollama(prompt)
-    elif MODE == "openai":
-        return call_openai(prompt)
+    elif MODE == "groq":
+        return call_groq(prompt)
     else:
-        return "Error: Invalid llm mode in config"
+         return "Error: Invalid llm mode in config"
+       
+
